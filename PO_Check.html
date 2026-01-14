@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UiPath Order Process Notice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- 라이브러리 로드 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #002B5B;
+            --primary-dark: #001A33;
+            --secondary: #FA4616;
+            --accent: #00A3E0;
+            --bg: #F1F5F9;
+            --white: #FFFFFF;
+            --text-main: #1E293B;
+            --text-sub: #475569;
+            --danger: #DC2626;
+            --highlight-yellow: #FFD700;
+            --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        body { 
+            margin: 0; padding: 40px 0; background-color: #CBD5E0; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            min-height: 100vh; font-family: 'Noto Sans KR', sans-serif;
+            color: var(--text-main);
+        }
+
+        .slide-container {
+            width: 720px;
+            min-height: 1280px;
+            background-color: var(--white);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.3);
+        }
+
+        /* 헤더 섹션 */
+        .header {
+            background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%);
+            height: 250px;
+            padding: 50px;
+            color: var(--white);
+            position: relative;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        /* html2canvas 호환성을 위해 가상 요소 대신 실제 div로 곡선 구현 */
+        .header-curve {
+            position: absolute;
+            bottom: -60px;
+            left: -10%;
+            width: 120%;
+            height: 120px;
+            background-color: var(--primary);
+            border-radius: 0 0 50% 50%;
+            z-index: -1;
+        }
+
+        .header-label {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            color: var(--accent);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 900;
+            line-height: 1.3;
+            margin: 0;
+            letter-spacing: -1px;
+        }
+
+        .intro-card {
+            margin: -20px 40px 15px 40px;
+            background: var(--white);
+            padding: 25px 35px;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            z-index: 10;
+            border-left: 10px solid var(--secondary);
+            flex-shrink: 0;
+        }
+
+        .intro-card p {
+            margin: 0;
+            font-size: 15px;
+            color: var(--text-main);
+            line-height: 1.8;
+            word-break: keep-all;
+        }
+
+        .main-content {
+            padding: 10px 40px 20px 40px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px; 
+        }
+
+        .section-title {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 5px;
+            border-bottom: 2px solid #E2E8F0;
+            padding-bottom: 10px;
+        }
+
+        .section-title i { color: var(--secondary); }
+
+        .doc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .doc-card {
+            background: #F8FAFC;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .doc-card h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: var(--primary);
+            font-weight: 800;
+            border-left: 4px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        .doc-card ul {
+            margin: 0; padding-left: 18px;
+            font-size: 14px;
+            color: var(--text-sub);
+            line-height: 1.6;
+        }
+
+        .doc-card li { margin-bottom: 5px; }
+
+        .note-box {
+            font-size: 13px;
+            color: var(--danger);
+            margin-top: 12px;
+            line-height: 1.6;
+            background: #FEF2F2;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #FEE2E2;
+        }
+
+        .case-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .case-item {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 22px;
+        }
+
+        .case-header {
+            font-weight: 800;
+            color: var(--primary);
+            font-size: 15.5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .case-header span {
+            background: #FEE2E2;
+            color: #B91C1C;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .sub-details {
+            margin: 0; padding-left: 18px;
+            font-size: 13.5px;
+            color: var(--text-sub);
+            line-height: 1.6;
+        }
+
+        .sub-details li { margin-bottom: 8px; }
+        .sub-details strong { color: var(--text-main); }
+        .highlight-text { color: #2563EB; font-weight: 700; }
+        .underline { text-decoration: underline; }
+
+        .example-box {
+            margin-top: 10px;
+            background: #F1F5F9;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #475569;
+            border-left: 4px solid #94A3B8;
+            line-height: 1.5;
+        }
+
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .info-box {
+            background: #F0F9FF;
+            border: 1px solid #BAE6FD;
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .info-box h4 {
+            margin: 0 0 10px 0;
+            font-size: 15px;
+            color: #0369A1;
+            font-weight: 800;
+            display: flex;
+            align-items: center gap: 8px;
+        }
+
+        .info-box ul {
+            margin: 0; padding-left: 18px;
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: #1E293B;
+        }
+
+        .footer-notice {
+            background-color: var(--primary);
+            padding: 30px 45px;
+            color: var(--highlight-yellow);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: auto;
+            border-top: 4px solid var(--secondary);
+        }
+
+        .notice-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 16px;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .notice-item i { 
+            color: var(--highlight-yellow); 
+            font-size: 20px; 
+            margin-top: 2px; 
+        }
+
+        .notice-item strong { 
+            color: var(--highlight-yellow);
+            font-weight: 900;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+
+        /* 하단 버튼 그룹 스타일 */
+        .download-btn-group {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-common {
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            color: white;
+            min-width: 160px;
+        }
+
+        #download-img-btn { background-color: var(--secondary); }
+        #download-pdf-btn { background-color: var(--primary); }
+
+        .btn-common:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.3);
+            filter: brightness(1.1);
+        }
+
+        /* 캡처 시 제외할 요소 */
+        [data-html2canvas-ignore] {
+            display: none !important;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 다운로드 버튼 그룹 -->
+    <div class="download-btn-group" data-html2canvas-ignore>
+        <button id="download-img-btn" class="btn-common">
+            <i class="fa-solid fa-image"></i> 이미지로 저장
+        </button>
+        <button id="download-pdf-btn" class="btn-common">
+            <i class="fa-solid fa-file-pdf"></i> PDF로 저장
+        </button>
+    </div>
+
+    <!-- 캡처 영역 -->
+    <div id="capture-area" class="slide-container">
+        <header class="header">
+            <div class="header-curve"></div>
+            <div class="header-label">Partner Announcement</div>
+            <h1>오더 프로세스 변경 및<br>발주 증빙 서류 제출 기준 안내</h1>
+        </header>
+
+        <article class="intro-card">
+            <p>2025년 11월부터 시행 중인 오더 프로세스 변경과 관련하여, 발주 증빙 서류 제출 기준을 추가로 안내드립니다. 최근 UiPath로부터 고객 증빙 반려 및 재 요청 사례가 반복되고 있어, <strong>1월 분기/연마감 기간에 라이선스 발급 지연이 발생하지 않도록</strong> 아래 기준을 반드시 확인하신 후 서류 제출 부탁드립니다.</p>
+        </article>
+
+        <main class="main-content">
+            <section>
+                <div class="section-title"><i class="fa-solid fa-file-invoice"></i> 1. 제출 서류 (필수 2종)</div>
+                <div class="doc-grid">
+                    <div class="doc-card">
+                        <h3>A. 파트너 발주서</h3>
+                        <ul>
+                            <li>파트너사 직인 또는 서명 필수</li>
+                            <li>제품명, 수량, 기간(시작일&종료일)이 ‘고객사 증빙’과 반드시 일치해야 함</li>
+                        </ul>
+                    </div>
+                    <div class="doc-card">
+                        <h3>B. 고객사 증빙 (양식 무관)</h3>
+                        <ul>
+                            <li>고객사 직인 또는 발주 담당자 서명</li>
+                            <li>고객사명(파트너 포털 Account Name과 동일)</li>
+                            <li>제품명, 수량, 기간(시작일/종료일)</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note-box">
+                    ※ 제품별 기간이 다르면, 고객사 증빙에도 각 제품 기간이 동일하게 기재되어야 함<br>
+                    ※ 발주서와 시스템 상 기간이 불일치하면 반려 <strong>(프로젝트 지연 등 발생)</strong><br>
+                    ※ 가격은 필수 기재 항목 아님
+                </div>
+            </section>
+
+            <section>
+                <div class="section-title"><i class="fa-solid fa-circle-exclamation"></i> 2. 주요 반려 사례 (제출 전 체크)</div>
+                <div class="case-container">
+                    <div class="case-item">
+                        <div class="case-header"><span>Case A</span> 직인/서명 또는 주요 항목 누락</div>
+                        <ul class="sub-details">
+                            <li>직인 또는 서명, 제품명, 수량, 기간 중 <strong>1개라도 누락 시</strong> 즉시 반려</li>
+                        </ul>
+                    </div>
+
+                    <div class="case-item">
+                        <div class="case-header"><span>Case B</span> 제품명, 기간, 고객사명 불일치</div>
+                        <ul class="sub-details">
+                            <li><strong>제품명:</strong>
+                                <ul style="list-style-type: disc; padding-left: 20px; margin-top: 5px;">
+                                    <li>‘RPA’처럼 포괄 표기 (예: Unattended Robot, Automation Developer, Uni Plus, Pro 등 구분 가능해야 함)</li>
+                                    <li>Flex, Uni 구분 명확하게 작성</li>
+                                    <li>UR을 AR로 기재 등 제품명 오류 또는 불일치</li>
+                                    <li><strong class="highlight-text underline">Orchestrator는 제외하고 작성할 것</strong></li>
+                                </ul>
+                            </li>
+                            <li><strong>기간 상세:</strong> 날짜(시작일&종료일) 미기재 및 ‘1년, 2년’ 형식 기재 시 반려</li>
+                            <li><strong>고객사명 상세:</strong> 영문 표기(약칭 등) 차이가 있으면 <strong>영문 사업자등록증</strong> 등 공식 영문 법인명 증빙 필요</li>
+                        </ul>
+                        <div class="example-box">
+                            <i class="fa-solid fa-lightbulb"></i> <strong>[실제 사례]</strong> 포털에 XX Corporation으로 등록되어 있으나, 발주서에 XX라고만 기재되어 반려된 사례 있음
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="bottom-grid">
+                <div class="info-box">
+                    <h4><i class="fa-solid fa-file-pdf"></i> 3. 제출 파일 형식</h4>
+                    <ul>
+                        <li>PC/모바일 캡처(스크린샷) 제출 불가</li>
+                        <li><strong>모든 파일은 PDF 제출</strong> 부탁드립니다.</li>
+                    </ul>
+                </div>
+                <div class="info-box">
+                    <h4><i class="fa-solid fa-pen-fancy"></i> 4. 증빙 제출 불가 시 (2가지 방법)</h4>
+                    <ul style="list-style-type: decimal;">
+                        <li>UiPath에서 고객사에 DocuSign 메일 발송</li>
+                        <li>DocuSign PDF 양식 요청 (고객사에 직접 DocuSign으로 서명 받기 어려울 시)</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer-notice">
+            <div class="notice-item">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span><strong>Renewal에 대한 견적은 최소 30일전</strong>에 요청해주시기 바랍니다.</span>
+            </div>
+            <div class="notice-item">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span><strong>DocuSign으로 증빙 대체</strong>할 경우, <strong>KCC 영업 담당자에게 미리 요청</strong>해주시기 바랍니다.</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+
+        // 캡처 공통 함수: 렌더링 에러 방지를 위해 그라데이션 제거 및 단순화
+        const getCaptureCanvas = async (element) => {
+            await document.fonts.ready;
+            window.scrollTo(0, 0);
+
+            return await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: "#FFFFFF",
+                logging: false,
+                width: element.offsetWidth,
+                height: element.offsetHeight,
+                onclone: (clonedDoc) => {
+                    const clonedHeader = clonedDoc.querySelector('.header');
+                    const clonedCurve = clonedDoc.querySelector('.header-curve');
+                    const clonedFooter = clonedDoc.querySelector('.footer-notice');
+                    
+                    if (clonedHeader) {
+                        clonedHeader.style.background = 'none';
+                        clonedHeader.style.backgroundColor = '#001A33'; // 단색
+                    }
+                    if (clonedCurve) {
+                        clonedCurve.style.background = 'none';
+                        clonedCurve.style.backgroundColor = '#003366'; // 단색
+                    }
+                    if (clonedFooter) {
+                        clonedFooter.style.background = 'none';
+                        clonedFooter.style.backgroundColor = '#002B5B'; // 단색
+                    }
+                }
+            });
+        };
+
+        // 이미지 저장
+        document.getElementById('download-img-btn').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 생성 중...';
+            
+            try {
+                const canvas = await getCaptureCanvas(document.getElementById('capture-area'));
+                const link = document.createElement('a');
+                link.download = 'UiPath_Order_Notice.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerHTML = '<i class="fa-solid fa-image"></i> 이미지로 저장';
+            } catch (error) {
+                console.error('이미지 저장 오류:', error);
+                btn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> 실패';
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // PDF 저장
+        document.getElementById('download-pdf-btn').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 생성 중...';
+
+            try {
+                const canvas = await getCaptureCanvas(document.getElementById('capture-area'));
+                const imgData = canvas.toDataURL('image/png', 1.0);
+                
+                const imgWidth = 210; // A4 가로 (mm)
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                const doc = new jsPDF('p', 'mm', 'a4');
+                doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+                doc.save('UiPath_Order_Notice.pdf');
+
+                btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> PDF로 저장';
+            } catch (error) {
+                console.error('PDF 저장 오류:', error);
+                btn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> 실패';
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
